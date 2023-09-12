@@ -81,7 +81,7 @@ plot!(bins, edrat20, label = "Eddington ratio 20%")
 plot!(bins, edrat30, label = "Eddington ratio 30%")
 
 
-m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = 0.0, ϵ3 = 0.0)
+m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = 0.0, ϵ3 = 0.0) # all OK
 
 d01 = ShakuraSunyaev(m1, eddington_ratio = 0.1)
 d02 = ShakuraSunyaev(m1, eddington_ratio = 0.2)
