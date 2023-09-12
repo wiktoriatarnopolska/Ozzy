@@ -32,7 +32,7 @@ x = SVector(0.0, 1000.0, deg2rad(20), 0.0)
 d_gt = ThinDisc(0.0, Inf)
 
 
-m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = -0.35, ϵ3 = 0.0)
+m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = -0.35, ϵ3 = 0.0) # all OK
 
 d01 = ShakuraSunyaev(m1, eddington_ratio = 0.1)
 d02 = ShakuraSunyaev(m1, eddington_ratio = 0.2)
