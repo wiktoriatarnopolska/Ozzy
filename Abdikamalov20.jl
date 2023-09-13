@@ -1,178 +1,114 @@
 using Gradus
 using Plots
+using Printf
 
-function calculate_line_profile(m, x, d, bins, plane)
+_format_metric(m::JohannsenMetric) = Printf.@sprintf "a=%.3f, α13=%.2f" m.a m.α13
+_format_metric(m::KerrMetric) = Printf.@sprintf "a=%.3f" m.a
+
+_format_label(edd) = Printf.@sprintf "Ṁ / Ṁedd = %.1f" (edd / 100)
+
+function calculate_line_profile(m, x, d, bins; kwargs...)
     _, f = lineprofile(
-        m, 
-        x, 
-        d, 
-        minrₑ = Gradus.isco(m) + 5e-2,
-        method = TransferFunctionMethod(), 
+        m,
+        x,
+        d;
+        method = TransferFunctionMethod(),
         verbose = true,
         bins = bins,
         maxrₑ = 500.0,
         # resolution
-        numrₑ = 250,
-        β₀ = 2.0,
-        Nr = 5000,
+        numrₑ = 200,
+        Nr = 3000,
+        kwargs...,
     )
     return f
 end
 
+function run_all_parameter_combinations(m, θ, bins; kwargs...)
+    x = SVector(0.0, 1000.0, deg2rad(θ), 0.0)
+    @info "m = $m θ = $(θ)"
+    # discs
+    dthin = ThinDisc(0.0, Inf)
+    d1 = ShakuraSunyaev(m, eddington_ratio = 0.1)
+    d2 = ShakuraSunyaev(m, eddington_ratio = 0.2)
+    d3 = ShakuraSunyaev(m, eddington_ratio = 0.3)
+    @info "0%"
+    edrat0 = @time calculate_line_profile(m, x, dthin, bins; kwargs...)
+    @info "10%"
+    edrat10 = @time calculate_line_profile(m, x, d1, bins; kwargs...)
+    @info "20%"
+    edrat20 = @time calculate_line_profile(m, x, d2, bins; kwargs...)
+    @info "30%"
+    edrat30 = @time calculate_line_profile(m, x, d3, bins; kwargs...)
+    return (; metric = m, f = [edrat0, edrat10, edrat20, edrat30], θ = θ, bins = bins)
+end
+
+function plot_all(data)
+    incl_text = Printf.@sprintf " θ=%0.f" data.θ
+    p = plot(title = _format_metric(data.metric) * incl_text, legend = :topleft)
+    for (edd, f) in zip((0, 10, 20, 30), data.f)
+        plot!(p, data.bins, f, label = _format_label(edd))
+    end
+    p
+end
+
 # define custom bins for g
-bins = collect(range(0.1, 1.4, 200))
+bins = collect(range(0.1, 1.4, 300))
 
-# define the plane to perform the binning over
-plane = PolarPlane(GeometricGrid(); Nr = 1000, Nθ = 1000, r_max = 1000.0)
+################## negative α13
 
-# inclination
-x = SVector(0.0, 1000.0, deg2rad(20), 0.0)
+# fergus: tiny blip at 0.65 g
+m_n1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = -0.35, ϵ3 = 0.0)
+data_n1 = run_all_parameter_combinations(m_n1, 20, bins; β₀ = 0)
 
-#geometric thin disc
-d_gt = ThinDisc(0.0, Inf)
+pn1 = plot_all(data_n1) |> display
 
+m_n2 = JohannsenMetric(M = 1.0, a = 0.9, α13 = -0.35, ϵ3 = 0.0)
+data_n2 = run_all_parameter_combinations(m_n2, 20, bins; β₀ = 0)
 
-m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = -0.35, ϵ3 = 0.0) # all OK
+pn2 = plot_all(data_n2) |> display
 
-d01 = ShakuraSunyaev(m1, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m1, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m1, eddington_ratio = 0.3)
+# fergus: okay but kinda wobbly close to peak?
+m_n3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = -0.35, ϵ3 = 0.0)
+data_n3 = run_all_parameter_combinations(m_n3, 20, bins; β₀ = 0)
 
-edrat0 = calculate_line_profile(m1, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m1, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m1, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m1, x, d03, bins, plane)
+pn3 = plot_all(data_n3) |> display
 
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = -0.35, a = 0.0", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
+################## zero α13
 
-m2 = JohannsenMetric(M=1.0, a = 0.9, α13 = -0.35, ϵ3 = 0.0) #all OK
+m_k1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = 0.0, ϵ3 = 0.0)
+data_k1 = run_all_parameter_combinations(m_k1, 20, bins; β₀ = 0)
 
-d01 = ShakuraSunyaev(m2, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m2, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m2, eddington_ratio = 0.3)
+pk1 = plot_all(data_k1) |> display
 
-edrat0 = calculate_line_profile(m2, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m2, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m2, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m2, x, d03, bins, plane)
+m_k2 = JohannsenMetric(M = 1.0, a = 0.9, α13 = 0.0, ϵ3 = 0.0)
+data_k2 = run_all_parameter_combinations(m_k2, 20, bins; β₀ = 0)
 
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = -0.35, a = 0.9", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
+pk2 = plot_all(data_k2) |> display
 
-m3 = JohannsenMetric(M=1.0, a = 0.998, α13 = -0.35, ϵ3 = 0.0) # all OK
+# fergus: okay but kinda wobbly close to peak?
+m_k3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = 0.0, ϵ3 = 0.0) # spike at 30% Eddington ratio
+data_k3 = run_all_parameter_combinations(m_k3, 20, bins; β₀ = 0)
 
-d01 = ShakuraSunyaev(m3, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m3, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m3, eddington_ratio = 0.3)
+pk3 = plot_all(data_k3) |> display
 
-edrat0 = calculate_line_profile(m3, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m3, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m3, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m3, x, d03, bins, plane)
+################## positive α13
 
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = -0.35, a = 0.998", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
+# fergus: tiny blip at 0.65 g
+m_p1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = 0.35, ϵ3 = 0.0)
+data_p1 = run_all_parameter_combinations(m_p1, 20, bins; β₀ = 0)
 
+pp1 = plot_all(data_p1) |> display
 
-m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = 0.0, ϵ3 = 0.0) # all OK
+m_p2 = JohannsenMetric(M = 1.0, a = 0.9, α13 = 0.35, ϵ3 = 0.0)
+data_p2 = run_all_parameter_combinations(m_p2, 20, bins; β₀ = 0)
 
-d01 = ShakuraSunyaev(m1, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m1, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m1, eddington_ratio = 0.3)
+pp2 = plot_all(data_p2) |> display
 
-edrat0 = calculate_line_profile(m1, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m1, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m1, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m1, x, d03, bins, plane)
+m_p3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = 0.35, ϵ3 = 0.0)
+data_p3 = run_all_parameter_combinations(m_p3, 20, bins; β₀ = 0)
 
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = 0.0, a = 0.0", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
+pp3 = plot_all(data_p3) |> display
 
-m2 = JohannsenMetric(M=1.0, a = 0.9, α13 = 0.0, ϵ3 = 0.0) # spike at eddington ratio 30%
-
-d01 = ShakuraSunyaev(m2, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m2, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m2, eddington_ratio = 0.3) #
-
-edrat0 = calculate_line_profile(m2, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m2, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m2, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m2, x, d03, bins, plane) #
-
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = 0.0, a = 0.9", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%") #
-
-m3 = JohannsenMetric(M=1.0, a = 0.998, α13 = 0.0, ϵ3 = 0.0) # spike at 30% Eddington ratio
-
-d01 = ShakuraSunyaev(m3, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m3, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m3, eddington_ratio = 0.3) #
-
-edrat0 = calculate_line_profile(m3, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m3, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m3, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m3, x, d03, bins, plane) #
-
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = 0.0, a = 0.998", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%") #
-
-m1 = JohannsenMetric(M=1.0, a = 0.0, α13 = 0.35, ϵ3 = 0.0) # all OK
-
-d01 = ShakuraSunyaev(m1, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m1, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m1, eddington_ratio = 0.3)
-
-edrat0 = calculate_line_profile(m1, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m1, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m1, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m1, x, d03, bins, plane)
-
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = 0.35, a = 0.0", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
-
-m2 = JohannsenMetric(M=1.0, a = 0.9, α13 = 0.35, ϵ3 = 0.0) # all OK
-
-d01 = ShakuraSunyaev(m2, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m2, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m2, eddington_ratio = 0.3)
-
-edrat0 = calculate_line_profile(m2, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m2, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m2, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m2, x, d03, bins, plane)
-
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = 0.35, a = 0.9", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
-
-m3 = JohannsenMetric(M=1.0, a = 0.998, α13 = 0.35, ϵ3 = 0.0) # all OK
-
-d01 = ShakuraSunyaev(m3, eddington_ratio = 0.1)
-d02 = ShakuraSunyaev(m3, eddington_ratio = 0.2)
-d03 = ShakuraSunyaev(m3, eddington_ratio = 0.3)
-
-edrat0 = calculate_line_profile(m3, x, d_gt, bins, plane)
-edrat10 = calculate_line_profile(m3, x, d01, bins, plane)
-edrat20 = calculate_line_profile(m3, x, d02, bins, plane)
-edrat30 = calculate_line_profile(m3, x, d03, bins, plane)
-
-plot(bins, edrat0, label = "Eddington ratio 0%", title = "α13 = 0.35, a = 0.998", legend=:topleft)
-plot!(bins, edrat10, label = "Eddington ratio 10%")
-plot!(bins, edrat20, label = "Eddington ratio 20%")
-plot!(bins, edrat30, label = "Eddington ratio 30%")
+# put everything together
+plot(pn1, pn2, pn3, pk1, pk2, pk3, pp1, pp2, pp3, layout = grid(3, 3), size = (1100, 1100))
