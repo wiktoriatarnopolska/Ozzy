@@ -55,60 +55,73 @@ end
 # define custom bins for g
 bins = collect(range(0.1, 1.4, 300))
 
+INCLINATION = 45.0
+KWARGS = (; β₀ = 1)
+
 ################## negative α13
 
-# fergus: tiny blip at 0.65 g
+# fergus 20: tiny blip at 0.65 g
 m_n1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = -0.35, ϵ3 = 0.0)
-data_n1 = run_all_parameter_combinations(m_n1, 20, bins; β₀ = 0)
+data_n1 = run_all_parameter_combinations(m_n1, INCLINATION, bins; KWARGS...)
 
-pn1 = plot_all(data_n1) |> display
+pn1 = plot_all(data_n1)
+display(pn1)
 
 m_n2 = JohannsenMetric(M = 1.0, a = 0.9, α13 = -0.35, ϵ3 = 0.0)
-data_n2 = run_all_parameter_combinations(m_n2, 20, bins; β₀ = 0)
+data_n2 = run_all_parameter_combinations(m_n2, INCLINATION, bins; KWARGS...)
 
-pn2 = plot_all(data_n2) |> display
+pn2 = plot_all(data_n2)
+display(pn2)
 
-# fergus: okay but kinda wobbly close to peak?
+# fergus 20: okay but kinda wobbly close to peak?
 m_n3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = -0.35, ϵ3 = 0.0)
-data_n3 = run_all_parameter_combinations(m_n3, 20, bins; β₀ = 0)
+data_n3 = run_all_parameter_combinations(m_n3, INCLINATION, bins; KWARGS...)
 
-pn3 = plot_all(data_n3) |> display
+pn3 = plot_all(data_n3)
+display(pn3)
 
 ################## zero α13
 
+# fergus 20: tiny blip at 0.65 g
 m_k1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = 0.0, ϵ3 = 0.0)
-data_k1 = run_all_parameter_combinations(m_k1, 20, bins; β₀ = 0)
+data_k1 = run_all_parameter_combinations(m_k1, INCLINATION, bins; KWARGS...)
 
-pk1 = plot_all(data_k1) |> display
+pk1 = plot_all(data_k1) 
+display(pk1)
 
 m_k2 = JohannsenMetric(M = 1.0, a = 0.9, α13 = 0.0, ϵ3 = 0.0)
-data_k2 = run_all_parameter_combinations(m_k2, 20, bins; β₀ = 0)
+data_k2 = run_all_parameter_combinations(m_k2, INCLINATION, bins; KWARGS...)
 
-pk2 = plot_all(data_k2) |> display
+pk2 = plot_all(data_k2) 
+display(pk2)
 
-# fergus: okay but kinda wobbly close to peak?
+# fergus 20: okay but kinda wobbly close to peak?
 m_k3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = 0.0, ϵ3 = 0.0) # spike at 30% Eddington ratio
-data_k3 = run_all_parameter_combinations(m_k3, 20, bins; β₀ = 0)
+data_k3 = run_all_parameter_combinations(m_k3, INCLINATION, bins; KWARGS...)
 
-pk3 = plot_all(data_k3) |> display
+pk3 = plot_all(data_k3) 
+display(pk3)
 
 ################## positive α13
 
-# fergus: tiny blip at 0.65 g
+# fergus 20: tiny blip at 0.65 g
 m_p1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = 0.35, ϵ3 = 0.0)
-data_p1 = run_all_parameter_combinations(m_p1, 20, bins; β₀ = 0)
+data_p1 = run_all_parameter_combinations(m_p1, INCLINATION, bins; KWARGS...)
 
-pp1 = plot_all(data_p1) |> display
+pp1 = plot_all(data_p1) 
+display(pp1)
 
 m_p2 = JohannsenMetric(M = 1.0, a = 0.9, α13 = 0.35, ϵ3 = 0.0)
-data_p2 = run_all_parameter_combinations(m_p2, 20, bins; β₀ = 0)
+data_p2 = run_all_parameter_combinations(m_p2, INCLINATION, bins; KWARGS...)
 
-pp2 = plot_all(data_p2) |> display
+pp2 = plot_all(data_p2) 
+display(pp2)
 
 m_p3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = 0.35, ϵ3 = 0.0)
-data_p3 = run_all_parameter_combinations(m_p3, 20, bins; β₀ = 0)
+data_p3 = run_all_parameter_combinations(m_p3, INCLINATION, bins; KWARGS...)
 
-pp3 = plot_all(data_p3) |> display
+pp3 = plot_all(data_p3) 
+display(pp3)
 
 # put everything together
 plot(pn1, pn2, pn3, pk1, pk2, pk3, pp1, pp2, pp3, layout = grid(3, 3), size = (1100, 1100))
