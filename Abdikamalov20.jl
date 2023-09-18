@@ -13,12 +13,15 @@ function calculate_line_profile(m, x, d, bins; kwargs...)
         x,
         d;
         method = TransferFunctionMethod(),
+        minrₑ = Gradus.isco(m) + 1e-2,
         verbose = true,
         bins = bins,
         maxrₑ = 500.0,
         # resolution
         numrₑ = 200,
         Nr = 3000,
+        abstol = 1e-10,
+        reltol = 1e-10,
         kwargs...,
     )
     return f
@@ -55,12 +58,12 @@ end
 # define custom bins for g
 bins = collect(range(0.1, 1.4, 300))
 
+# choosing the inclination:
 INCLINATION = 45.0
-KWARGS = (; β₀ = 1)
+KWARGS = (; β₀ = 2)
 
 ################## negative α13
 
-# fergus 20: tiny blip at 0.65 g
 m_n1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = -0.35, ϵ3 = 0.0)
 data_n1 = run_all_parameter_combinations(m_n1, INCLINATION, bins; KWARGS...)
 
@@ -73,7 +76,6 @@ data_n2 = run_all_parameter_combinations(m_n2, INCLINATION, bins; KWARGS...)
 pn2 = plot_all(data_n2)
 display(pn2)
 
-# fergus 20: okay but kinda wobbly close to peak?
 m_n3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = -0.35, ϵ3 = 0.0)
 data_n3 = run_all_parameter_combinations(m_n3, INCLINATION, bins; KWARGS...)
 
@@ -82,7 +84,6 @@ display(pn3)
 
 ################## zero α13
 
-# fergus 20: tiny blip at 0.65 g
 m_k1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = 0.0, ϵ3 = 0.0)
 data_k1 = run_all_parameter_combinations(m_k1, INCLINATION, bins; KWARGS...)
 
@@ -95,7 +96,6 @@ data_k2 = run_all_parameter_combinations(m_k2, INCLINATION, bins; KWARGS...)
 pk2 = plot_all(data_k2) 
 display(pk2)
 
-# fergus 20: okay but kinda wobbly close to peak?
 m_k3 = JohannsenMetric(M = 1.0, a = 0.998, α13 = 0.0, ϵ3 = 0.0) # spike at 30% Eddington ratio
 data_k3 = run_all_parameter_combinations(m_k3, INCLINATION, bins; KWARGS...)
 
@@ -104,7 +104,6 @@ display(pk3)
 
 ################## positive α13
 
-# fergus 20: tiny blip at 0.65 g
 m_p1 = JohannsenMetric(M = 1.0, a = 0.0, α13 = 0.35, ϵ3 = 0.0)
 data_p1 = run_all_parameter_combinations(m_p1, INCLINATION, bins; KWARGS...)
 
@@ -124,4 +123,4 @@ pp3 = plot_all(data_p3)
 display(pp3)
 
 # put everything together
-plot(pn1, pn2, pn3, pk1, pk2, pk3, pp1, pp2, pp3, layout = grid(3, 3), size = (1100, 1100))
+plot(pn1, pk1, pp1, pn2, pk2, pp2, pn3, pk3, pp3, layout = grid(3, 3), size = (1100, 1100))
